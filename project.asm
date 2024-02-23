@@ -1,81 +1,62 @@
 %include 'print.asm'
 %include 'read.asm'
 %include 'convert.asm'
+%include 'utils.asm'
 
 section .bss
 buffer  resb 1000
+n       resd 1; num elements in S (calculated at runtime)
 
-section .data
-var1    equ 5
-var2    equ 4
-var3    equ 3
-arr     dd 0, 0, 0
+	section .data
+	S       dd 7, 3, 5, 12, 2, 1, 5, 3, 8, 4, 6, 4
+	Sbytes  equ ($-S)
+	Ssize   equ 4
 
-section .txt
-global  _start
+	k    equ 5
+	;    messages
+	msg1 db "k-partition of set S not possible", 0
+
+	section .txt
+	global  _start
 
 _start:
-	;    maxStack
-	push var3
-	push var2
-	push var1
-	call maxStack
+	;find n
+	mov   [n], dword 12
+	mov   eax, [n]
+	mov   ebx, buffer
+	call  int2str
+	mov   eax, buffer
+	call  printLF
 
-	mov  ebx, buffer
-	call int2str
-	mov  eax, buffer
-	call printLF
+	; mov eax, S
+	; mov ebx, k
+	; mov ecx, n
+	; call partition
 
-	;    maxNoStack
-	push var3
-	push var2
-	push var1
-	call maxNoStack
-
-	mov  ebx, buffer
-	call int2str
-	mov  eax, buffer
-	call printLF
-
-	;    fill
-	push 3
-	push arr
-	call maxStack
-
-	mov  ebx, buffer
-	call int2str
-	mov  eax, buffer
-	call printLF
-
-	;    fillReverse
-	push 3
-	push arr
-	call fillReverse
-
-	mov  ebx, buffer
-	call int2str
-	mov  eax, buffer
-	call printLF
+	push S
+	push k
+	call sum
 
 	mov ebx, 0; exit
 	mov eax, 1
 	int 0x80
 
-.err:
+error:
 	mov ebx, 1; error
 	mov eax, 1
 	int 0x80
 
-fill:
-	mov eax, [esp+4]
-	add eax, [esp+8]
-	ret
+	; Method with params and stack frame
+	; eax=S, ebx=k, ecx=n
 
-fillReverse:
-	ret
+partition:
+	mov edx, n
+	cmp edx, k
+	jge .continue
 
-maxNoStack:
-	ret
+	mov  eax, msg1; subset too small for k partitions
+	call printLF
+	jmp  error
 
-maxStack:
+.continue:
 	ret
