@@ -1,6 +1,7 @@
-section .txt
+	;       Our Package for handling simple things programming langauges give by default
+	section .txt
 
-	; pushed in this order: Subset, n
+	; pushed in this order: Subset, (n elements)
 	; byte array esp+20
 	; n esp+16
 	; ret
@@ -18,16 +19,24 @@ sum:
 	mov    ecx, [esp+16]; n
 	mov    eax, 0; sum
 
-	; .loop:
-	; dec ecx
-	
-	; add eax, [ebx+ecx]
-	
-	; cmp ecx, 0
-	; jne .loop
+.loop:
+	dec ecx
+	add eax, dword [ebx+(ecx*4)]
+
+	; pushad
+	; mov  eax, ecx
+	; mov  ebx, buffer
+	; call int2str
+	; mov  eax, buffer
+	; call printLF
+	; popad
+
+	cmp ecx, 0
+	jne .loop
+
+	mov [esp+20], eax
 
 	pop ecx
 	pop ebx
 	pop eax
-	mov eax, [esp+4]
-	ret
+	ret 4
