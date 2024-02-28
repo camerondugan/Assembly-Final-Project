@@ -43,8 +43,6 @@ _start:
 	mov  ebx, k
 	mov  ecx, [n]
 	call partition
-	mov  eax, dbug1
-	call printLF
 
 	mov ebx, 0; exit
 	mov eax, 1
@@ -61,17 +59,17 @@ error:
 	; internal: edx=sum, ebp=A[n]
 
 partition:
-	cmp  ecx, ebx
+	cmp  ecx, ebx; Impossible detection
 	jge  .continue
 	mov  eax, msg1; subset too small for k partitions
 	call printLF
 	jmp  error
 
-.continue:
+.continue:; start of partition
 
 	; A[n] array defined from esp to esp-[n]
 	; retn <- ebp A[n] is [ebp+esi+1]
-	; n addresses down: <- esp
+	; 12*4(48) btyes down: <- esp
 
 	;   save esp for later, and ebp can be used to reliably access the A array
 	mov ebp, esp
@@ -84,6 +82,12 @@ partition:
 	mov eax, [n]
 	mov ebx, 4
 	mul ebx
+
+	; ; print eax
+	; mov  ebx, buffer
+	; call int2str
+	; mov  eax, buffer
+	; call printLF
 
 	;   mov esp down by that much
 	sub esp, eax
@@ -110,7 +114,6 @@ partition:
 .setupSumLeft:
 	dec ecx
 	mov [sumLeft+4*(ecx)], eax
-	;   print eax
 	cmp ecx, 0
 	jne .setupSumLeft
 
@@ -118,13 +121,11 @@ partition:
 	pop ecx
 	pop edx
 
-	mov esp, ebp
-
 	mov  esi, [n]
 	dec  esi
-	;    call subsetSum
-	mov  eax, dbug1
-	call printLF
+	call subsetSum
+
+	mov esp, ebp
 
 	ret
 
@@ -188,7 +189,7 @@ subsetSum:
 	; call printLF
 	; popad
 
-	mov [ebp+esi*4], ecx
+	mov [ebp+(esi+1)*4], ecx; +1 bc ebp is retn address
 	dec ecx
 
 	; pushad
