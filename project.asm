@@ -130,31 +130,29 @@ partition:
 	ret
 
 printSumLeft:
-	pushad
 	push ecx
-
-	mov ecx, k
+	mov  ecx, k
 
 .loop:
 	dec ecx
 
-	; pushad
-	; mov  eax, [sumLeft+4*ecx]
-	; mov  ebx, buffer
-	; call int2str
-	; mov  eax, buffer
-	; call printLF
-	; popad
+	pushad
+	mov  eax, [sumLeft+4*ecx]
+	mov  ebx, buffer
+	call int2str
+	mov  eax, buffer
+	call printLF
+	popad
 
 	cmp ecx, 0
 	jne .loop
 
-	push eax
+	pushad
 	mov  eax, newline
 	call printLF
-	pop  eax
-	pop  ecx
 	popad
+
+	pop ecx
 	ret
 
 	; sumLeft
@@ -200,11 +198,11 @@ subsetSum:
 	; call printLF
 	; popad
 
-	; call printSumLeft
-
 	mov eax, dword [sumLeft+ecx*4]
 	cmp eax, dword [S+esi*4]
 	jl  .cont3
+
+	call printSumLeft
 
 	push dword [sumLeft+ecx*4]; preserve array value for later
 
@@ -225,6 +223,13 @@ subsetSum:
 
 	pop dword [sumLeft+ecx*4]
 
+	pushad
+	mov  ebx, buffer
+	call int2str
+	mov  eax, buffer
+	call printLF
+	popad
+
 	;return early
 	cmp     eax, 0
 	je      .cont3
@@ -234,7 +239,7 @@ subsetSum:
 
 	cmp ecx, 0
 	jg  .loop
-
+	mov eax, 0
 	ret
 
 	; checks if subsets all have sum/k sums
