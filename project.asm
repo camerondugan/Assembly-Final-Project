@@ -28,6 +28,7 @@ _start:
 	mov eax, Sbytes
 	mov ebx, Ssize
 	div ebx
+	
 	mov [n], eax
 
 	; ; print eax
@@ -120,4 +121,30 @@ partition:
 
 	mov esp, ebp
 
+	ret
+subsetSum:
+	; ebp reserved for A[n]
+	
+	call checkSum
+	jnz .continue
+	mov eax, 1
+	ret
+	.continue:
+	
+	ret
+
+checkSum:
+	push ecx
+	mov ecx, k
+	.L1:
+		dec ecx
+		cmp dword [sumLeft+4*ecx], 0
+		jz .L2
+		pop ecx
+		ret
+	.L2:
+		test ecx, ecx
+		jnz .L1
+
+	pop ecx
 	ret
