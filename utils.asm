@@ -23,14 +23,6 @@ sum:
 	dec ecx
 	add eax, dword [ebx+(ecx*4)]
 
-	; pushad
-	; mov  eax, ecx
-	; mov  ebx, buffer
-	; call int2str
-	; mov  eax, buffer
-	; call printLF
-	; popad
-
 	cmp ecx, 0
 	jne .loop
 
