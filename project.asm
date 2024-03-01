@@ -4,27 +4,47 @@
 %include 'utils.asm'
 
 	section .data
-	S       dd 7, 3, 5, 12, 2, 1, 5, 3, 8, 4, 6, 4
+	Subset  dd  12, 7, 2, 1, 5, 3, 3, 5, 4, 8, 4, 6
 	;       S       dd 3, 1, 5, 3
-	Sbytes  equ ($-S)
+	Sbytes  equ ($-Subset)
 	Ssize   equ 4
 
-	k       equ 5
+	k       dd 5
+	;       inputMessages
+	input1  db "Insert the number of partitions (single digit number expected): ", 0
 	;       messages
-	msg1    db "k-partition of set S not possible", 0
+	msg1    db "k-partition of this subset not possible", 0
+	msg2    db "partition ", 0
+	msg3    db " is ", 0
 	;       debug
 	newline db "", 0
+	space   db " ", 0
 	dbug1   db "esi is -1", 0
 
 	section .bss
 	buffer  resb 1000
-	n       resd 1; num elements in S (calculated at runtime)
-	sumLeft resd k; for partition all 0's
+	n       resd 1; num elements in Subset (calculated at runtime)
+	sumLeft resd 10; for partition all 0's
 
 	section .txt
 	global  _start
 
 _start:
+	mov  eax, input1
+	call print
+	;    input from user
+	mov  eax, buffer
+	mov  ebx, 1
+	call read
+
+	mov  eax, buffer
+	call str2int
+	mov  [k], eax
+
+	mov  eax, buffer
+	mov  ebx, 1
+	call read
+
 	;   find n
 	mov edx, 0
 	mov eax, Sbytes
@@ -39,8 +59,8 @@ _start:
 	; mov  eax, buffer
 	; call printLF
 
-	mov  eax, S
-	mov  ebx, k
+	mov  eax, Subset
+	mov  ebx, [k]
 	mov  ecx, [n]
 	call partition
 
@@ -55,7 +75,7 @@ error:
 
 	; Method with params and stack frame
 
-	; params: eax=S, ebx=k, ecx=n
+	; params: eax=Subset, ebx=k, ecx=n
 	; internal: edx=sum, ebp=A[n]
 
 partition:
@@ -100,16 +120,16 @@ partition:
 	push ecx
 	push eax
 
-	push S
+	push Subset
 	push dword [n]
 	call sum
 	pop  eax
 	mov  edx, 0
-	mov  ecx, k
+	mov  ecx, [k]
 	div  ecx
 
 	;   comment out line below might not need
-	mov ecx, k; num elements
+	mov ecx, [k]; num elements
 
 .setupSumLeft:
 	dec ecx
@@ -125,32 +145,114 @@ partition:
 	dec  esi
 	call subsetSum
 
+	cmp eax, 0
+	je  .skip
+
+	mov ecx, 0
+
+.printPartition:
+	pushad
+	mov  eax, newline
+	call printLF
+	popad
+
+	pushad
+	mov  eax, msg2
+	call print
+	popad
+
+	pushad
+	mov  eax, ecx
+	mov  ebx, buffer
+	call int2str
+	mov  eax, buffer
+	call print
+	popad
+
+	pushad
+	mov  eax, msg3
+	call print
+	popad
+
+	mov esi, 0; j or inner loop counter
+
+.printPartitionL2:
+
+	push eax
+	push ebx
+	mov  eax, [ebp+(esi+1)*4]
+	mov  ebx, ecx
+	inc  ebx
+	cmp  eax, ebx
+	pop  ebx
+	pop  eax
+
+	jne .printPartitionCont
+
+	; pushad
+	; mov  eax, [ebp+((esi+1)*4)]
+	; mov  ebx, buffer
+	; call int2str
+	; mov  eax, buffer
+	; call print
+	; popad
+
+	pushad
+	mov  eax, [Subset+esi*4]
+	mov  ebx, buffer
+	call int2str
+	mov  eax, buffer
+	call print
+	popad
+	pushad
+	mov  eax, space
+	call print
+	popad
+
+.printPartitionCont:
+
+	inc esi
+	cmp esi, [n]
+	jl  .printPartitionL2
+
+	inc ecx
+	cmp ecx, [k]
+	jl  .printPartition
+
+	jmp .success
+
+.skip:
+	mov  eax, msg1
+	call printLF
+
+.success:
+
 	mov esp, ebp
 
 	ret
 
 printSumLeft:
 	push ecx
-	mov  ecx, k
+	mov  ecx, [k]
 
 .loop:
 	dec ecx
 
-	pushad
-	mov  eax, [sumLeft+4*ecx]
-	mov  ebx, buffer
-	call int2str
-	mov  eax, buffer
-	call printLF
-	popad
+	; pushad
+	; mov  eax, [sumLeft+4*ecx]
+	; mov  ebx, buffer
+	; call int2str
+	; mov  eax, buffer
+	; call printLF
+	; popad
 
 	cmp ecx, 0
 	jne .loop
 
-	pushad
-	mov  eax, newline
-	call printLF
-	popad
+	; pushad
+	; mov  eax, newline
+	; call printLF
+	; popad
 
 	pop ecx
 	ret
@@ -161,7 +263,7 @@ subsetSum:
 	; ebp reserved for A[n]
 	; esi reserved for n
 
-	call checkSum
+	call checkSums
 	jnz  .cont1
 	mov  eax, 1
 	ret
@@ -169,14 +271,16 @@ subsetSum:
 .cont1:
 	cmp  esi, 0
 	jge  .cont2
+	pushad
 	mov  eax, dbug1
 	call printLF
+	popad
 	mov  eax, 0
 	ret
 
 .cont2:
 	mov eax, 0; result = 0
-	mov ecx, k; arrlen = k
+	mov ecx, [k]; arrlen = k
 
 .loop:
 	; pushad
@@ -199,17 +303,17 @@ subsetSum:
 	; popad
 
 	mov eax, dword [sumLeft+ecx*4]
-	cmp eax, dword [S+esi*4]
+	cmp eax, dword [Subset+esi*4]
 	jl  .cont3
 
-	call printSumLeft
+	; call printSumLeft
 
 	push dword [sumLeft+ecx*4]; preserve array value for later
 
 	;    sumLeft[i] -= current item
 	push eax; preserve eax
 	mov  eax, [sumLeft+ecx*4]
-	sub  eax, S[esi*4]
+	sub  eax, Subset[esi*4]
 	mov  [sumLeft+ecx*4], eax
 	pop  eax; preserve eax
 
@@ -223,12 +327,12 @@ subsetSum:
 
 	pop dword [sumLeft+ecx*4]
 
-	pushad
-	mov  ebx, buffer
-	call int2str
-	mov  eax, buffer
-	call printLF
-	popad
+	; pushad
+	; mov  ebx, buffer
+	; call int2str
+	; mov  eax, buffer
+	; call printLF
+	; popad
 
 	;return early
 	cmp     eax, 0
@@ -244,9 +348,9 @@ subsetSum:
 
 	; checks if subsets all have sum/k sums
 
-checkSum:
+checkSums:
 	push ecx
-	mov  ecx, k
+	mov  ecx, [k]
 
 .L1:
 	dec ecx
